@@ -8,16 +8,15 @@ BASE = Path(__file__).resolve().parent.parent
 BILDER = BASE / "data" / "fgvc-aircraft-2013b" / "data" / "images"
 ERGEBNISSE =  BASE / "ergebnisse" / "zuschnitt-test"
 
-#Fotografen Signatur weg bekommen (untere 20 Pixel)
+# Fotografen-Signatur: untere 20 Pixel
 def crop_signature(image):
     w, h = image.size
     return image.crop((0, 0, w, h - 20))
 
-#Variante 1 stauchen auf 224x224
+# Variante 1: auf 224x224 stauchen
 def variant_1(image):
     return image.resize((224, 224))
 
-#Liste aus (Bildnummer, Klassenname) lesen
 def lade_liste(datei):
     paare = []
     with open(datei, encoding="utf-8") as f:
@@ -25,25 +24,23 @@ def lade_liste(datei):
             zeile = zeile.strip()
             if not zeile:
                 continue
-            nummer, klasse = zeile.split(" ", 1)   # nur am ersten Leerzeichen"BAE 146-200" haben selbst eins
+            nummer, klasse = zeile.split(" ", 1)  # nur am ersten Leerzeichen, Namen wie "BAE 146-200" enthalten selbst eins
             paare.append((nummer, klasse))
     return paare
 
-#Alle 100 Klassennamen lesen und jedem eine feste Nummer 0-99 geben
 def lade_klassen(datei):
     with open(datei, encoding="utf-8") as f:
         namen = [zeile.strip() for zeile in f if zeile.strip()]
     return {name: nummer for nummer, name in enumerate(namen)}
 
-#Umwandlung Bild -> Tensor (3x224x224, Werte 0-1) und Normalisierung mit ImageNet-Werten
+# ImageNet-Mittelwerte, passend zum vortrainierten ViT
 tensor_transform = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
-#Dataset: liefert Bild i als Tensor zusammen mit der Klassennummer
 class FlugzeugDataset(Dataset):
-    def __init__(self, split):   # split: "train", "val" oder "test"
+    def __init__(self, split):  # "train", "val" oder "test"
         self.paare = lade_liste(BILDER.parent / f"images_variant_{split}.txt")
         self.klassen = lade_klassen(BILDER.parent / "variants.txt")
 
@@ -56,7 +53,6 @@ class FlugzeugDataset(Dataset):
         image = variant_1(crop_signature(image))
         return tensor_transform(image), self.klassen[klasse]
 
-#Läuft nur bei direktem Start nicht bei import
 if __name__ == "__main__":
     #Test 1: Bild laden Signatur entfernen auf 224x224 stauchen und speichern
     name = "0063835"

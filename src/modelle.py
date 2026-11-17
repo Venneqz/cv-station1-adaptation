@@ -1,19 +1,15 @@
 import timm
 
-ANZAHL_KLASSEN = 100  # 100 Flugzeug-Varianten
+ANZAHL_KLASSEN = 100
 
 
 def lade_modell():
-    # Vortrainierter Vision Transformer (ViT-Base, 16x16-Kacheln, 224 Pixel), wie VL 03, Folie 51.
-    # num_classes=100 ersetzt den ImageNet-Kopf durch einen neuen Kopf mit 100 Ausgängen.
     return timm.create_model("vit_base_patch16_224", pretrained=True, num_classes=ANZAHL_KLASSEN)
 
 
 def nur_kopf_trainieren(modell):
-    # Alles einfrieren ...
     for parameter in modell.parameters():
         parameter.requires_grad = False
-    # ... und nur den neuen Kopf wieder freigeben.
     for parameter in modell.head.parameters():
         parameter.requires_grad = True
 
