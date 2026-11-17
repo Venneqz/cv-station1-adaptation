@@ -33,10 +33,10 @@ def lade_klassen(datei):
         namen = [zeile.strip() for zeile in f if zeile.strip()]
     return {name: nummer for nummer, name in enumerate(namen)}
 
-# ImageNet-Mittelwerte, passend zum vortrainierten ViT
+# Werte aus dem pretrained_cfg des ViT-Checkpoints (augreg2), nicht die ImageNet-Werte
 tensor_transform = transforms.Compose([
     transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
 ])
 
 class FlugzeugDataset(Dataset):

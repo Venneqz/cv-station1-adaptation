@@ -1,4 +1,5 @@
 import time
+from pathlib import Path
 
 import torch
 from torch.utils.data import DataLoader
@@ -7,12 +8,15 @@ from src.daten import FlugzeugDataset
 from src.modelle import lade_modell, nur_kopf_trainieren
 
 GRAKA = "cuda"  # auch bei AMD (ROCm)
-EPOCHEN = 3
+EPOCHEN = 20
 LERNRATE = 1e-3
 WORKER = 4
+SEED = 67
+MODELL_DATEI = Path(__file__).resolve().parent / "ergebnisse" / "lp_bestes.pt"
 
 
 def main():
+    torch.manual_seed(SEED)  # vor lade_modell, damit auch der neue Kopf gleich startet
     train_daten = FlugzeugDataset("train")
     val_daten = FlugzeugDataset("val")
     train_loader = DataLoader(train_daten, batch_size=32, shuffle=True,
@@ -26,6 +30,9 @@ def main():
 
     loss_funktion = torch.nn.CrossEntropyLoss()
     optimierer = torch.optim.AdamW(modell.head.parameters(), lr=LERNRATE)
+
+    bester_val_loss = float("inf")
+    beste_epoche = 0
 
     for epoche in range(EPOCHEN):
         start = time.time()
@@ -61,12 +68,23 @@ def main():
                 val_richtig += (ausgabe.argmax(dim=1) == klassen).sum().item()
 
         dauer = time.time() - start
+        val_loss_mittel = val_loss / len(val_daten)
+
+        gespeichert = ""
+        if val_loss_mittel < bester_val_loss:
+            bester_val_loss = val_loss_mittel
+            beste_epoche = epoche + 1
+            torch.save(modell.state_dict(), MODELL_DATEI)
+            gespeichert = " *"
+
         print(
             f"Epoche {epoche + 1}: "
             f"Train Loss {train_loss / len(train_daten):.3f}, richtig {100 * train_richtig / len(train_daten):.1f} % | "
-            f"Val Loss {val_loss / len(val_daten):.3f}, richtig {100 * val_richtig / len(val_daten):.1f} % | "
-            f"{dauer:.0f} s"
+            f"Val Loss {val_loss_mittel:.3f}, richtig {100 * val_richtig / len(val_daten):.1f} % | "
+            f"{dauer:.0f} s{gespeichert}"
         )
+
+    print(f"bestes Modell: Epoche {beste_epoche} (Val Loss {bester_val_loss:.3f})")
 
 
 # Pflicht bei num_workers > 0 unter Windows: die Helfer importieren diese Datei neu
