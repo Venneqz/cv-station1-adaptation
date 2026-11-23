@@ -1,3 +1,4 @@
+import sys
 import time
 from pathlib import Path
 
@@ -5,39 +6,51 @@ import torch
 from torch.utils.data import DataLoader
 
 from src.daten import FlugzeugDataset
-from src.modelle import lade_modell, nur_kopf_trainieren
+from src.modelle import baue_modell, zaehle_parameter
 
 GRAKA = "cuda"  # auch bei AMD (ROCm)
 EPOCHEN = 20
-LERNRATE = 1e-3
+LERNRATEN = {"lp": 1e-3, "cnn_lp": 1e-2, "cnn_ft": 3e-4, "lora_r4": 3e-4, "lora_r8": 3e-4, "lora_r16": 3e-4}
 WORKER = 4
 SEED = 67
-MODELL_DATEI = Path(__file__).resolve().parent / "ergebnisse" / "lp_bestes.pt"
+ERGEBNISSE = Path(__file__).resolve().parent / "ergebnisse"
 
 
-def main():
-    torch.manual_seed(SEED)  # vor lade_modell, damit auch der neue Kopf gleich startet
-    train_daten = FlugzeugDataset("train")
-    val_daten = FlugzeugDataset("val")
+def main(verfahren):
+    modell_datei = ERGEBNISSE / f"{verfahren}_bestes.pt"
+    lernrate = LERNRATEN[verfahren]
+    torch.manual_seed(SEED)  # vor baue_modell, damit Kopf und LoRA-Matrizen gleich starten
+    modell = baue_modell(verfahren)
+    _, trainierbar = zaehle_parameter(modell)
+    mean = modell.pretrained_cfg["mean"]
+    std = modell.pretrained_cfg["std"]
+    print(f"Verfahren: {verfahren}, trainierbare Parameter: {trainierbar:,}, Lernrate: {lernrate}")
+    print(f"Normierung: mean {mean}, std {std}")
+    modell = modell.to(GRAKA)
+
+    train_daten = FlugzeugDataset("train", mean, std)
+    val_daten = FlugzeugDataset("val", mean, std)
     train_loader = DataLoader(train_daten, batch_size=32, shuffle=True,
                               num_workers=WORKER, persistent_workers=True)
     val_loader = DataLoader(val_daten, batch_size=32,
                             num_workers=WORKER, persistent_workers=True)
 
-    modell = lade_modell()
-    nur_kopf_trainieren(modell)
-    modell = modell.to(GRAKA)
-
     loss_funktion = torch.nn.CrossEntropyLoss()
-    optimierer = torch.optim.AdamW(modell.head.parameters(), lr=LERNRATE)
+    trainierbare = [p for p in modell.parameters() if p.requires_grad]
+    optimierer = torch.optim.AdamW(trainierbare, lr=lernrate)
 
     bester_val_loss = float("inf")
     beste_epoche = 0
 
+    lauf_start = time.time()
     for epoche in range(EPOCHEN):
         start = time.time()
 
-        modell.train()
+        # cnn_lp: im train()-Modus würde BatchNorm seine Laufmittelwerte an unsere Bilder anpassen
+        if verfahren == "cnn_lp":
+            modell.eval()
+        else:
+            modell.train()
         train_loss = 0
         train_richtig = 0
         for bilder, klassen in train_loader:
@@ -74,7 +87,7 @@ def main():
         if val_loss_mittel < bester_val_loss:
             bester_val_loss = val_loss_mittel
             beste_epoche = epoche + 1
-            torch.save(modell.state_dict(), MODELL_DATEI)
+            torch.save(modell.state_dict(), modell_datei)
             gespeichert = " *"
 
         print(
@@ -85,8 +98,10 @@ def main():
         )
 
     print(f"bestes Modell: Epoche {beste_epoche} (Val Loss {bester_val_loss:.3f})")
+    print(f"Gesamtdauer: {(time.time() - lauf_start) / 60:.1f} min")
+    print(f"Grafikspeicher (Höchstwert): {torch.cuda.max_memory_allocated() / 1024**3:.2f} GB")
 
 
 # Pflicht bei num_workers > 0 unter Windows: die Helfer importieren diese Datei neu
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1])

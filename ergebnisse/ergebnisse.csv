@@ -1,2 +1,7 @@
 verfahren,trainierbare_parameter,test_genauigkeit_prozent,macro_f1_prozent
 lp,76900,50.83,50.74
+lora_r4,298084,63.04,62.98
+lora_r8,519268,63.40,63.31
+lora_r16,961636,64.33,64.28
+cnn_lp,204900,42.84,42.13
+cnn_ft,23712932,64.66,64.47

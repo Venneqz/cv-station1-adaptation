@@ -10,7 +10,7 @@ GRAKA = "cuda"
 DURCHLAEUFE = 100
 
 if __name__ == "__main__":
-    daten = FlugzeugDataset("train")
+    daten = FlugzeugDataset("train", (0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     loader = DataLoader(daten, batch_size=32, shuffle=True)
 
     start = time.time()
@@ -19,7 +19,7 @@ if __name__ == "__main__":
     dauer = time.time() - start
     print(f"Nur Daten laden: {dauer:.1f} s für {len(daten)} Bilder, {len(daten) / dauer:.0f} Bilder/s")
 
-    modell = lade_modell().to(GRAKA)
+    modell = lade_modell("vit_base_patch16_224").to(GRAKA)
     modell.eval()
     bilder = torch.randn(32, 3, 224, 224).to(GRAKA)
 

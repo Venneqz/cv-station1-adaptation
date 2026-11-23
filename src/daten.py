@@ -33,16 +33,15 @@ def lade_klassen(datei):
         namen = [zeile.strip() for zeile in f if zeile.strip()]
     return {name: nummer for nummer, name in enumerate(namen)}
 
-# Werte aus dem pretrained_cfg des ViT-Checkpoints (augreg2), nicht die ImageNet-Werte
-tensor_transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
-])
-
 class FlugzeugDataset(Dataset):
-    def __init__(self, split):  # "train", "val" oder "test"
+    # mean und std aus dem pretrained_cfg des Modells, sie unterscheiden sich je Checkpoint
+    def __init__(self, split, mean, std):  # split: "train", "val" oder "test"
         self.paare = lade_liste(BILDER.parent / f"images_variant_{split}.txt")
         self.klassen = lade_klassen(BILDER.parent / "variants.txt")
+        self.tensor_transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=mean, std=std),
+        ])
 
     def __len__(self):
         return len(self.paare)
@@ -51,7 +50,7 @@ class FlugzeugDataset(Dataset):
         nummer, klasse = self.paare[i]
         image = PIL.Image.open(BILDER / f"{nummer}.jpg").convert("RGB")
         image = variant_1(crop_signature(image))
-        return tensor_transform(image), self.klassen[klasse]
+        return self.tensor_transform(image), self.klassen[klasse]
 
 if __name__ == "__main__":
     #Test 1: Bild laden Signatur entfernen auf 224x224 stauchen und speichern
@@ -72,9 +71,10 @@ if __name__ == "__main__":
     print("Bilder pro Klasse: min", min(anzahl.values()), "max", max(anzahl.values()))
     print("Klassen im Training, die nicht in variants.txt stehen:", set(anzahl) - set(klassen))
 
-    #Test 4: Dataset
+    #Test 4: Dataset (mit den Werten des ViT)
+    mean = std = (0.5, 0.5, 0.5)
     for split in ["train", "val", "test"]:
-        print(split, "Länge:", len(FlugzeugDataset(split)))
-    tensor, label = FlugzeugDataset("train")[0]
+        print(split, "Länge:", len(FlugzeugDataset(split, mean, std)))
+    tensor, label = FlugzeugDataset("train", mean, std)[0]
     print("Form:", tuple(tensor.shape), "Typ:", tensor.dtype, "Klasse:", label)
     print("Wertebereich:", float(tensor.min()), "bis", float(tensor.max()))
