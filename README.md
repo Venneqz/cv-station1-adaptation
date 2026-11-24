@@ -22,7 +22,7 @@ Forschungsfrage: Wie effizient lässt sich ein vortrainierter ViT an eine neue A
 
 **Abgabeformat:**
 1. PDF-Dokument max. 6 Seiten
-   - Template für Format: https://github.com/cvpr-org/author-kit/releases/tag/CVPR2026-v1
+   - Template für Format: https://github.com/cvpr-org/author-kit/releases/tag/CVPR2026-v1(latex)
 2. Quellcode / Link auf Git-Repository
    - Trainingsbilder nicht in ILIAS hochladen
 

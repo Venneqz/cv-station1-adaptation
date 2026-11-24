@@ -5,6 +5,7 @@ import torch.nn as nn
 ANZAHL_KLASSEN = 100
 VIT = "vit_base_patch16_224"
 CNN = "resnet50"
+CNN_21K = "resnetv2_50x1_bit.goog_in21k"  # nicht die _ft_in1k-Variante, die erwartet 448 x 448
 
 
 class LoraLinear(nn.Module):
@@ -57,6 +58,12 @@ def baue_modell(verfahren):
         return modell
     if verfahren == "cnn_ft":
         return lade_modell(CNN)  # ohne Einfrieren ist alles trainierbar
+    if verfahren == "cnn21k_lp":
+        modell = lade_modell(CNN_21K)
+        nur_kopf_trainieren(modell)
+        return modell
+    if verfahren == "cnn21k_ft":
+        return lade_modell(CNN_21K)
     raise ValueError(f"unbekanntes Verfahren: {verfahren}")
 
 

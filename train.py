@@ -10,7 +10,8 @@ from src.modelle import baue_modell, zaehle_parameter
 
 GRAKA = "cuda"  # auch bei AMD (ROCm)
 EPOCHEN = 20
-LERNRATEN = {"lp": 1e-3, "cnn_lp": 1e-2, "cnn_ft": 3e-4, "lora_r4": 3e-4, "lora_r8": 3e-4, "lora_r16": 3e-4}
+LERNRATEN = {"lp": 1e-3, "cnn_lp": 1e-2, "cnn_ft": 3e-4, "lora_r4": 3e-4, "lora_r8": 3e-4, "lora_r16": 3e-4,
+             "cnn21k_lp": 3e-4, "cnn21k_ft": 1e-4}
 WORKER = 4
 SEED = 67
 ERGEBNISSE = Path(__file__).resolve().parent / "ergebnisse"
