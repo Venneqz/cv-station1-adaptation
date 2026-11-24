@@ -29,7 +29,7 @@ ERGEBNISSE = Path("ergebnisse")
 def main(verfahren):
     modell_datei = ERGEBNISSE / f"{verfahren}_bestes.pt"
     lernrate = LERNRATEN[verfahren]
-    torch.manual_seed(SEED)  # vor baue_modell, damit Kopf und LoRA-Matrizen gleich starten
+    torch.manual_seed(SEED)
     modell = baue_modell(verfahren)
     mean = modell.pretrained_cfg["mean"]
     std = modell.pretrained_cfg["std"]
@@ -55,7 +55,7 @@ def main(verfahren):
     for epoche in range(EPOCHEN):
         start = time.time()
 
-        # cnn_lp: im train()-Modus würde BatchNorm seine Laufmittelwerte an unsere Bilder anpassen
+        # cnn_lp: im train()-Modus würde BatchNorm seine Laufmittelwerte an die Bilder anpassen
         if verfahren == "cnn_lp":
             modell.eval()
         else:
@@ -111,6 +111,5 @@ def main(verfahren):
     print(f"Grafikspeicher (Höchstwert): {torch.cuda.max_memory_allocated() / 1024**3:.2f} GB")
 
 
-# Pflicht bei num_workers > 0 unter Windows: die Helfer importieren diese Datei neu
 if __name__ == "__main__":
     main(sys.argv[1])

@@ -8,7 +8,6 @@ VERFAHREN_VERWECHSLUNGEN = "lora_r16"
 ANZAHL_FEHLER = 5
 
 # Name im Diagramm und Lage der Beschriftung: (Versatz x, Versatz y in Punkten, Ausrichtung).
-# Gezeichnet werden nur die Verfahren, die hier stehen.
 NAMEN = {
     "lp": ("ViT-LP", (5, -3, "left")),
     "lora_r4": ("LoRA r=4", (-5, -3, "right")),

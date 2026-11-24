@@ -53,6 +53,5 @@ def main(verfahren):
         schreiber.writerow([verfahren, zaehle_trainierbare(modell), f"{100 * genauigkeit:.2f}", f"{100 * macro_f1:.2f}"])
 
 
-# Pflicht bei num_workers > 0 unter Windows: die Helfer importieren diese Datei neu
 if __name__ == "__main__":
     main(sys.argv[1])
