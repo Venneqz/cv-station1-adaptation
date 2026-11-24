@@ -1,17 +1,14 @@
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
-from sklearn.metrics import confusion_matrix
 
-from src.daten import BILDER, lade_klassen
+from src.daten import lade_klassen
 from train import ERGEBNISSE
 
-VERFAHREN_MATRIX = "lora_r16"
+VERFAHREN_VERWECHSLUNGEN = "lora_r16"
 ANZAHL_FEHLER = 5
 
 # Name im Diagramm und Lage der Beschriftung: (Versatz x, Versatz y in Punkten, Ausrichtung).
-# Die Lage ist von Hand gewählt, weil die drei LoRA-Punkte dicht beieinander liegen.
-# Gezeichnet wird nur, was hier steht: cnn_lp und cnn_ft (1k-Vortraining) fehlen mit Absicht.
+# Gezeichnet werden nur die Verfahren, die hier stehen.
 NAMEN = {
     "lp": ("ViT-LP", (5, -3, "left")),
     "lora_r4": ("LoRA r=4", (-5, -3, "right")),
@@ -27,8 +24,8 @@ def genauigkeit_gegen_parameter():
     tabelle = tabelle[tabelle["verfahren"].isin(NAMEN)]
     ist_cnn = tabelle["verfahren"].str.startswith("cnn")
 
-    plt.rcParams["font.size"] = 8  # eine Schriftgröße für alles, passend zur Spaltenbreite
-    plt.figure(figsize=(3.4, 2.4))  # eine CVPR-Spalte ist etwa 8,3 cm breit
+    plt.rcParams["font.size"] = 8
+    plt.figure(figsize=(3.4, 2.4))
     for name, gruppe, farbe in [("ViT-B/16", tabelle[~ist_cnn], "tab:blue"),
                                 ("ResNetV2-50", tabelle[ist_cnn], "tab:orange")]:
         plt.scatter(gruppe["trainierbare_parameter"], gruppe["test_genauigkeit_prozent"],
@@ -41,7 +38,7 @@ def genauigkeit_gegen_parameter():
     plt.xscale("log")
     plt.xlabel("trainierbare Parameter")
     plt.ylabel("Test-Genauigkeit in %")
-    plt.margins(x=0.1, y=0.15)  # Platz für die Beschriftung am Rand
+    plt.margins(x=0.1, y=0.15)
     plt.legend(loc="lower right", labelspacing=0.3, borderpad=0.3, handletextpad=0.3)
     plt.grid(alpha=0.3)
     plt.savefig(ERGEBNISSE / "genauigkeit_parameter.pdf", bbox_inches="tight")
@@ -49,20 +46,13 @@ def genauigkeit_gegen_parameter():
 
 
 def haeufigste_verwechslungen():
-    vorhersagen = pd.read_csv(ERGEBNISSE / f"{VERFAHREN_MATRIX}_vorhersagen.csv")
-    klassen = lade_klassen(BILDER.parent / "variants.txt")
-    namen = list(klassen)  # Position in der Liste = Klassennummer
+    vorhersagen = pd.read_csv(ERGEBNISSE / f"{VERFAHREN_VERWECHSLUNGEN}_vorhersagen.csv")
+    namen = list(lade_klassen())  # Position in der Liste = Klassennummer
+    fehler = vorhersagen[vorhersagen["wahr"] != vorhersagen["vorhergesagt"]]
 
-    # labels fest vorgeben, damit die Matrix auch dann 100 x 100 ist, wenn eine Klasse nie vorkommt
-    matrix = confusion_matrix(vorhersagen["wahr"], vorhersagen["vorhergesagt"],
-                              labels=range(len(namen)))
-    np.fill_diagonal(matrix, 0)
-
-    print(f"Häufigste Verwechslungen ({VERFAHREN_MATRIX}):")
-    groesste = np.argsort(matrix, axis=None)[::-1][:ANZAHL_FEHLER]
-    for stelle in groesste:
-        wahr, vorhergesagt = np.unravel_index(stelle, matrix.shape)  # Zeile = wahr, Spalte = vorhergesagt
-        print(f"{namen[wahr]} wird mit {namen[vorhergesagt]} verwechselt, {matrix[wahr, vorhergesagt]}-mal")
+    print(f"Häufigste Verwechslungen ({VERFAHREN_VERWECHSLUNGEN}):")
+    for (wahr, vorhergesagt), anzahl in fehler.value_counts().head(ANZAHL_FEHLER).items():
+        print(f"{namen[wahr]} wird mit {namen[vorhergesagt]} verwechselt, {anzahl}-mal")
 
 
 if __name__ == "__main__":

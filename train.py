@@ -6,15 +6,24 @@ import torch
 from torch.utils.data import DataLoader
 
 from src.daten import FlugzeugDataset
-from src.modelle import baue_modell, zaehle_parameter
+from src.modelle import baue_modell, zaehle_trainierbare
 
-GRAKA = "cuda"  # auch bei AMD (ROCm)
+GRAKA = "cuda"
 EPOCHEN = 20
-LERNRATEN = {"lp": 1e-3, "cnn_lp": 1e-2, "cnn_ft": 3e-4, "lora_r4": 3e-4, "lora_r8": 3e-4, "lora_r16": 3e-4,
-             "cnn21k_lp": 3e-4, "cnn21k_ft": 1e-4}
+BATCH = 32
 WORKER = 4
 SEED = 67
-ERGEBNISSE = Path(__file__).resolve().parent / "ergebnisse"
+LERNRATEN = {
+    "lp": 1e-3,
+    "lora_r4": 3e-4,
+    "lora_r8": 3e-4,
+    "lora_r16": 3e-4,
+    "cnn_lp": 1e-2,
+    "cnn_ft": 3e-4,
+    "cnn21k_lp": 3e-4,
+    "cnn21k_ft": 1e-4,
+}
+ERGEBNISSE = Path("ergebnisse")
 
 
 def main(verfahren):
@@ -22,18 +31,17 @@ def main(verfahren):
     lernrate = LERNRATEN[verfahren]
     torch.manual_seed(SEED)  # vor baue_modell, damit Kopf und LoRA-Matrizen gleich starten
     modell = baue_modell(verfahren)
-    _, trainierbar = zaehle_parameter(modell)
     mean = modell.pretrained_cfg["mean"]
     std = modell.pretrained_cfg["std"]
-    print(f"Verfahren: {verfahren}, trainierbare Parameter: {trainierbar:,}, Lernrate: {lernrate}")
+    print(f"Verfahren: {verfahren}, trainierbare Parameter: {zaehle_trainierbare(modell):,}, Lernrate: {lernrate}")
     print(f"Normierung: mean {mean}, std {std}")
     modell = modell.to(GRAKA)
 
     train_daten = FlugzeugDataset("train", mean, std)
     val_daten = FlugzeugDataset("val", mean, std)
-    train_loader = DataLoader(train_daten, batch_size=32, shuffle=True,
+    train_loader = DataLoader(train_daten, batch_size=BATCH, shuffle=True,
                               num_workers=WORKER, persistent_workers=True)
-    val_loader = DataLoader(val_daten, batch_size=32,
+    val_loader = DataLoader(val_daten, batch_size=BATCH,
                             num_workers=WORKER, persistent_workers=True)
 
     loss_funktion = torch.nn.CrossEntropyLoss()

@@ -5,7 +5,7 @@ import torch.nn as nn
 ANZAHL_KLASSEN = 100
 VIT = "vit_base_patch16_224"
 CNN = "resnet50"
-CNN_21K = "resnetv2_50x1_bit.goog_in21k"  # nicht die _ft_in1k-Variante, die erwartet 448 x 448
+CNN_21K = "resnetv2_50x1_bit.goog_in21k"
 
 
 class LoraLinear(nn.Module):
@@ -57,7 +57,7 @@ def baue_modell(verfahren):
         nur_kopf_trainieren(modell)
         return modell
     if verfahren == "cnn_ft":
-        return lade_modell(CNN)  # ohne Einfrieren ist alles trainierbar
+        return lade_modell(CNN)
     if verfahren == "cnn21k_lp":
         modell = lade_modell(CNN_21K)
         nur_kopf_trainieren(modell)
@@ -67,38 +67,5 @@ def baue_modell(verfahren):
     raise ValueError(f"unbekanntes Verfahren: {verfahren}")
 
 
-def zaehle_parameter(modell):
-    gesamt = sum(p.numel() for p in modell.parameters())
-    trainierbar = sum(p.numel() for p in modell.parameters() if p.requires_grad)
-    return gesamt, trainierbar
-
-
-if __name__ == "__main__":
-    modell = lade_modell(VIT)
-
-    nur_kopf_trainieren(modell)
-    gesamt, trainierbar = zaehle_parameter(modell)
-    print(f"Parameter gesamt:      {gesamt:,}")
-    print(f"Davon trainierbar:     {trainierbar:,}")
-    print(f"Anteil trainierbar:    {100 * trainierbar / gesamt:.2f} %")
-
-    # LoRA-Prüfungen: dasselbe Modell vorher und nachher, weil jeder lade_modell()-Aufruf
-    # einen anderen zufälligen Kopf erzeugt
-    bilder = torch.randn(8, 3, 224, 224)
-    modell.eval()
-    with torch.no_grad():
-        ohne_lora = modell(bilder)
-
-    lora_einbauen(modell, r=8)
-    gesamt, trainierbar = zaehle_parameter(modell)
-    print(f"LoRA r = 8 trainierbar: {trainierbar:,} (erwartet 519,268)")
-
-    modell.eval()  # neu eingebaute Schichten starten im Trainingsmodus
-    with torch.no_grad():
-        mit_lora = modell(bilder)
-    print("Gleiche Ausgabe wie ohne LoRA:", torch.allclose(ohne_lora, mit_lora))
-
-    _, trainierbar = zaehle_parameter(baue_modell("cnn_lp"))
-    print(f"cnn_lp trainierbar: {trainierbar:,} (erwartet 204,900)")
-    _, trainierbar = zaehle_parameter(baue_modell("cnn_ft"))
-    print(f"cnn_ft trainierbar: {trainierbar:,} (erwartet 23,712,932)")
+def zaehle_trainierbare(modell):
+    return sum(p.numel() for p in modell.parameters() if p.requires_grad)

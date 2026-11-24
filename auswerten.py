@@ -6,8 +6,8 @@ from sklearn.metrics import f1_score
 from torch.utils.data import DataLoader
 
 from src.daten import FlugzeugDataset
-from src.modelle import baue_modell, zaehle_parameter
-from train import ERGEBNISSE, GRAKA, WORKER
+from src.modelle import baue_modell, zaehle_trainierbare
+from train import BATCH, ERGEBNISSE, GRAKA, WORKER
 
 ERGEBNISSE_DATEI = ERGEBNISSE / "ergebnisse.csv"
 
@@ -22,7 +22,7 @@ def main(verfahren):
     modell.eval()
 
     test_daten = FlugzeugDataset("test", modell.pretrained_cfg["mean"], modell.pretrained_cfg["std"])
-    test_loader = DataLoader(test_daten, batch_size=32, num_workers=WORKER)
+    test_loader = DataLoader(test_daten, batch_size=BATCH, num_workers=WORKER)
 
     wahr = []
     vorhergesagt = []
@@ -45,13 +45,12 @@ def main(verfahren):
         schreiber.writerow(["wahr", "vorhergesagt"])
         schreiber.writerows(zip(wahr, vorhergesagt))
 
-    _, trainierbar = zaehle_parameter(modell)
     neu = not ERGEBNISSE_DATEI.exists()
     with open(ERGEBNISSE_DATEI, "a", newline="") as f:
         schreiber = csv.writer(f)
         if neu:
             schreiber.writerow(["verfahren", "trainierbare_parameter", "test_genauigkeit_prozent", "macro_f1_prozent"])
-        schreiber.writerow([verfahren, trainierbar, f"{100 * genauigkeit:.2f}", f"{100 * macro_f1:.2f}"])
+        schreiber.writerow([verfahren, zaehle_trainierbare(modell), f"{100 * genauigkeit:.2f}", f"{100 * macro_f1:.2f}"])
 
 
 # Pflicht bei num_workers > 0 unter Windows: die Helfer importieren diese Datei neu

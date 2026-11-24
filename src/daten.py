@@ -1,43 +1,27 @@
-import PIL.Image
 from pathlib import Path
-from collections import Counter
+
+from PIL import Image
 from torch.utils.data import Dataset
 from torchvision import transforms
 
-BASE = Path(__file__).resolve().parent.parent
-BILDER = BASE / "data" / "fgvc-aircraft-2013b" / "data" / "images"
-ERGEBNISSE =  BASE / "ergebnisse" / "zuschnitt-test"
+DATEN = Path("data/fgvc-aircraft-2013b/data")
 
-# Fotografen-Signatur: untere 20 Pixel
-def crop_signature(image):
-    w, h = image.size
-    return image.crop((0, 0, w, h - 20))
 
-# Variante 1: auf 224x224 stauchen
-def variant_1(image):
-    return image.resize((224, 224))
+def lade_liste(split):
+    with open(DATEN / f"images_variant_{split}.txt", encoding="utf-8") as f:
+        # nur am ersten Leerzeichen trennen, Namen wie "BAE 146-200" enthalten selbst eins
+        return [zeile.strip().split(" ", 1) for zeile in f]
 
-def lade_liste(datei):
-    paare = []
-    with open(datei, encoding="utf-8") as f:
-        for zeile in f:
-            zeile = zeile.strip()
-            if not zeile:
-                continue
-            nummer, klasse = zeile.split(" ", 1)  # nur am ersten Leerzeichen, Namen wie "BAE 146-200" enthalten selbst eins
-            paare.append((nummer, klasse))
-    return paare
 
-def lade_klassen(datei):
-    with open(datei, encoding="utf-8") as f:
-        namen = [zeile.strip() for zeile in f if zeile.strip()]
-    return {name: nummer for nummer, name in enumerate(namen)}
+def lade_klassen():
+    with open(DATEN / "variants.txt", encoding="utf-8") as f:
+        return {zeile.strip(): nummer for nummer, zeile in enumerate(f)}
+
 
 class FlugzeugDataset(Dataset):
-    # mean und std aus dem pretrained_cfg des Modells, sie unterscheiden sich je Checkpoint
     def __init__(self, split, mean, std):  # split: "train", "val" oder "test"
-        self.paare = lade_liste(BILDER.parent / f"images_variant_{split}.txt")
-        self.klassen = lade_klassen(BILDER.parent / "variants.txt")
+        self.paare = lade_liste(split)
+        self.klassen = lade_klassen()
         self.tensor_transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize(mean=mean, std=std),
@@ -48,33 +32,8 @@ class FlugzeugDataset(Dataset):
 
     def __getitem__(self, i):
         nummer, klasse = self.paare[i]
-        image = PIL.Image.open(BILDER / f"{nummer}.jpg").convert("RGB")
-        image = variant_1(crop_signature(image))
-        return self.tensor_transform(image), self.klassen[klasse]
-
-if __name__ == "__main__":
-    #Test 1: Bild laden Signatur entfernen auf 224x224 stauchen und speichern
-    name = "0063835"
-    image = crop_signature(PIL.Image.open(BILDER / f"{name}.jpg"))
-    variant_1(image).save(ERGEBNISSE / f"{name}_variant_1.jpg")
-
-    #Test 2: Trainingsliste lesen
-    train = lade_liste(BILDER.parent / "images_variant_train.txt")
-    print("Länge:", len(train), "(erwartet 3334)")
-    print("Erste drei:", train[:3])
-
-    #Test 3: Klassen-Nummern und Bilder pro Klasse
-    klassen = lade_klassen(BILDER.parent / "variants.txt")
-    print("Klassen:", len(klassen), "(erwartet 100)")
-    print("Erste drei:", list(klassen.items())[:3])
-    anzahl = Counter(klasse for _, klasse in train)
-    print("Bilder pro Klasse: min", min(anzahl.values()), "max", max(anzahl.values()))
-    print("Klassen im Training, die nicht in variants.txt stehen:", set(anzahl) - set(klassen))
-
-    #Test 4: Dataset (mit den Werten des ViT)
-    mean = std = (0.5, 0.5, 0.5)
-    for split in ["train", "val", "test"]:
-        print(split, "Länge:", len(FlugzeugDataset(split, mean, std)))
-    tensor, label = FlugzeugDataset("train", mean, std)[0]
-    print("Form:", tuple(tensor.shape), "Typ:", tensor.dtype, "Klasse:", label)
-    print("Wertebereich:", float(tensor.min()), "bis", float(tensor.max()))
+        bild = Image.open(DATEN / "images" / f"{nummer}.jpg").convert("RGB")
+        breite, hoehe = bild.size
+        bild = bild.crop((0, 0, breite, hoehe - 20))  # Fotografen-Signatur: untere 20 Pixel
+        bild = bild.resize((224, 224))
+        return self.tensor_transform(bild), self.klassen[klasse]
