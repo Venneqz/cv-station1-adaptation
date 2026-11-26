@@ -1,0 +1,11 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Verfahren: lp, trainierbare Parameter: 76,900, Lernrate: 0.001
+Normierung: mean (0.5, 0.5, 0.5), std (0.5, 0.5, 0.5)
+D:\cv\station1-adaptation\.venv\Lib\site-packages\timm\layers\attention.py:124: UserWarning: Using AOTriton backend for Efficient Attention forward... (Triggered internally at C:/b/pytorch/aten/src/ATen/native/transformers/hip/attention.hip:1452.)
+  x = F.scaled_dot_product_attention(
+Epoche 1: Train Loss 3.952, richtig 12.1 % | Val Loss 3.402, richtig 19.1 % | 117 s *
+Epoche 2: Train Loss 2.975, richtig 30.9 % | Val Loss 3.107, richtig 25.1 % | 82 s *
+Epoche 3: Train Loss 2.491, richtig 43.4 % | Val Loss 2.821, richtig 30.1 % | 82 s *
+bestes Modell: Epoche 3 (Val Loss 2.821)
+Gesamtdauer: 4.7 min
+Grafikspeicher (Höchstwert): 0.70 GB
