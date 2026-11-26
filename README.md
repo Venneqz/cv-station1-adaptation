@@ -13,12 +13,26 @@ Forschungsfrage: Wie effizient lässt sich ein vortrainierter ViT an eine neue A
 - Vergleich der Modelle
 - Diskutieren Sie Ihre Ergebnisse
 
-**Repo - Aufbau:**
-| Ordner | Inhalt |
+**Repo-Aufbau:**
+| Datei / Ordner | Inhalt |
 |---|---|
-| `src/` | eigener Code (Daten laden, Modelle, Training, Auswertung) |
-| `ergebnisse/` | Kennzahlen als CSV, Diagramme, Konfusionsmatrizen |
-| `ausarbeitung/` | Bericht im CVPR-2026-LaTeX-Template (Vorgaben, s.u.) |
+| `src/daten.py` | Datensatz laden, Copyright-Streifen entfernen, auf 224 × 224 stauchen, normieren |
+| `src/modelle.py` | ViT-B/16 und ResNets laden, einfrieren, eigene LoRA-Schicht |
+| `train.py` | Training eines Verfahrens, speichert das beste Modell nach Validierungsverlust |
+| `auswerten.py` | Test-Genauigkeit und Macro-F1, schreibt `ergebnisse/ergebnisse.csv` und die Vorhersagen |
+| `ergebnisse/` | Kennzahlen, Vorhersagen je Lauf, Abbildungen, `logs/` mit den Trainingslogs |
+
+**Starten** (aus dem Repo-Ordner, Daten unter `data/fgvc-aircraft-2013b`):
+    python train.py <verfahren>
+    python auswerten.py <verfahren>
+
+**Verfahren und Namen in der Ausarbeitung:**
+| Code | Ausarbeitung |
+|---|---|
+| `lp` | ViT-LP |
+| `lora_r4`, `lora_r8`, `lora_r16` | LoRA r = 4, 8, 16 |
+| `cnn21k_lp`, `cnn21k_ft` | CNN-LP, CNN-FT (ResNetV2-50, ImageNet-21k) |
+| `cnn_lp`, `cnn_ft` | ResNet-50 (ImageNet-1k), nur im Anhang |
 
 **Abgabeformat:**
 1. PDF-Dokument max. 6 Seiten

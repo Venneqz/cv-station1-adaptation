@@ -8,4 +8,4 @@ Epoche 2: Train Loss 2.975, richtig 30.9 % | Val Loss 3.107, richtig 25.1 % | 82
 Epoche 3: Train Loss 2.491, richtig 43.4 % | Val Loss 2.821, richtig 30.1 % | 82 s *
 bestes Modell: Epoche 3 (Val Loss 2.821)
 Gesamtdauer: 4.7 min
-Grafikspeicher (Höchstwert): 0.70 GB
+Grafikspeicher (HÃ¶chstwert): 0.70 GB
